@@ -17,6 +17,7 @@ import json
 
 # Variaveis ↓
 
+adm = []
 contas = []
 
 if getattr(sys, "frozen", False):
@@ -94,11 +95,11 @@ def menu_principal():
     while True:
         print(
             Panel(
-                """|[cyan]1[/]| [white]:desktop_computer: Acessar Conta[/]   ([white]Aperte[/] '[green]+[/]' [white]para ADM[/])
-|[cyan]2[/]| [white]:dollar: Sacar[/]
-|[cyan]3[/]| [white]:moneybag: Depositar[/]
-|[cyan]4[/]| [white]:money_with_wings: Transferir[/]
-|[red]0[/]| [red]:x: Sair[/]""",
+                """\n|[cyan]1[/]|[white]:mag_right: Verificar Saldo[/]  [[white]Aperte[/] |[rgb(0,255,0)]+[/]| [white]menu[/] [rgb(0,200,0)]ADM[/]]
+|[cyan]2[/]|[white]:dollar: Sacar[/]
+|[cyan]3[/]|[white]:moneybag: Depositar[/]
+|[cyan]4[/]|[white]:money_with_wings: Transferir[/]
+|[red]0[/]|[red]:x: Sair[/]\n""",
                 title="[cyan]A[/][white]LPHA[/] [rgb(160,0,160)]B[/][white]ANK[/] :bank:",
                 style="rgb(180,0,135)",
                 width=50,
@@ -114,8 +115,33 @@ def menu_principal():
             continuar()
             continue
         break
-    
+
     return opc
+
+
+def menu_adm():
+    while True:
+        print(
+            Panel(
+                """\n|[cyan]1[/]|[white]:writing_hand:  Cadastrar Titular[/]
+|[cyan]2[/]|[white] :wastebasket: Remover Titular[/]
+|[cyan]3[/]|[white]:clipboard: Lista de Contas[/]
+|[yellow]0[/]|[yellow]:back: Menu Anterior[/]\n""",
+                title="[rgb(0,200,0)]=ADM=[/]",
+                style="rgb(180,0,135)",
+                width=30,
+            )
+        )
+        opc = input("Opção: ").strip()
+
+        if not opc.isdecimal() or len(opc) != 1:
+            cor_alerta("[white]Opção[/] Invalida!")
+            continuar()
+            continue
+        break
+
+    return opc
+
 
 # Classes ↓
 
@@ -139,22 +165,18 @@ class Conta_Bancaria:
 
 
 class Titular(Conta_Bancaria):
-    def __init__(self, saldo=0, email="", usuario="", senha=""):
+    def __init__(self, saldo=0, usuario="", senha=""):
         super().__init__(saldo)
-        self.__email = email
         self.__usuario = usuario
         self.__senha = senha
         self.__cartao_inserido = False
-
-    def exibir_email(self):
-        return self.__email
 
     def exibir_usuario(self):
         return self.__usuario
 
     def exibir_conta(self):
         print(
-            f"ID: {self.exibir_id()}, Email: {self.exibir_email()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
+            f"ID: {self.exibir_id()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
         )
 
     def validar_senha(self):
@@ -168,10 +190,14 @@ class Titular(Conta_Bancaria):
             break
 
     def inserir_cartao(self):
+        print(f"Bem Vindo {self.exibir_usuario()}!")
+
         self.__cartao_inserido = True
         return self.__cartao_inserido
 
     def remover_cartao(self):
+        print(f"Até Mais {self.exibir_usuario()}!")
+
         self.__cartao_inserido = False
         return self.__cartao_inserido
 
@@ -180,8 +206,6 @@ class Titular(Conta_Bancaria):
 
     def sacar(self, valor):
         if self.cartao_ativo():
-            print(f"Bem Vindo {self.exibir_usuario()}!")
-
             self.validar_senha()
 
             if valor <= 0:
@@ -199,8 +223,6 @@ class Titular(Conta_Bancaria):
             print("Insira o Cartão Para Sacar!")
 
     def depositar(self, valor):
-        print(f"Bem Vindo {self.exibir_usuario()}!")
-
         self.validar_senha()
 
         if self.cartao_ativo():
@@ -216,15 +238,49 @@ class Titular(Conta_Bancaria):
         else:
             print("Insira o Cartão Para Depositar!")
 
+    def transferir(self, conta, valor):
+        self.validar_senha()
+
+        if self.cartao_ativo():
+            if valor <= 0:
+                print("Valor Invalido!")
+
+            if valor <= self.exibir_saldo():
+                self.alterar_saldo(self.exibir_saldo() - valor)
+                conta.alterar_saldo(conta.exibir_saldo() + valor)
+
+            else:
+                print(
+                    f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
+                )
+        else:
+            print("Insira o Cartão Para Transferir!")
+
 
 # Main ↓
+
+limpar_terminal()
 loading()
 sleep(1)
-menu_principal()
+continuar()
 
-# titular1 = Titular(email="exemplo1@gmail.com", usuario="Exemplo 1", senha="09072026")
-# titular2 = Titular(email="exemplo2@gmail.com", usuario="Exemplo 2", senha="09072026")
-# titular3 = Titular(email="exemplo3@gmail.com", usuario="Exemplo 3", senha="09072026")
+while True:
+    opcao_mp = menu_principal()
+
+    if opcao_mp == "+":
+        limpar_terminal()
+        
+    opcao_madm = menu_adm()
+    
+    if opcao_madm == 0:
+        continue
+    
+    limpar_terminal()
+
+        
+# titular1 = Titular(usuario="Exemplo 1", senha="090726", saldo=1000)
+# titular2 = Titular(usuario="Exemplo 2", senha="090726", saldo=950)
+# titular3 = Titular(usuario="Exemplo 3", senha="090726", saldo=1350)
 
 # loading()
 
@@ -235,3 +291,20 @@ menu_principal()
 # titular1.inserir_cartao()
 # titular1.depositar(500)
 # titular1.sacar(200)
+
+# titular1.exibir_conta()
+# titular2.exibir_conta()
+
+# titular1.inserir_cartao()
+
+# conta = str(input("Qual conta voce quer transferir?: "))
+
+# if conta in titular2.exibir_usuario():
+#     conta = titular2
+
+# valor = int(input("Qual o valor?: "))
+
+# titular1.transferir(conta, valor)
+
+# titular1.exibir_conta()
+# titular2.exibir_conta()
