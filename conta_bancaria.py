@@ -9,15 +9,26 @@ from rich import print
 from stdiomask import getpass
 from hashlib import sha256
 
+from time import sleep
 import platform
 import os
-
+import sys
 import json
 
 # Variaveis ↓
 
 contas = []
-local_script = os.path.dirname(os.path.abspath(__file__))
+
+if getattr(sys, "frozen", False):
+    local_script = os.path.dirname(
+        sys.executable
+    )  # Localiza o diretorio do programa se (execultavel)
+
+else:
+    local_script = os.path.dirname(
+        os.path.abspath(__file__)
+    )  # Localiza o diretorio do programa se (srcipt)
+
 arquivo_json = os.path.join(local_script, "contas.json")
 
 # Funcões ↓
@@ -29,6 +40,29 @@ def limpar_terminal():
 
     else:
         os.system("clear")
+
+
+def loading():  # Barra de Loading similar ao usando no tqdm
+    with Live("", refresh_per_second=30) as live:
+        for n in range(101):
+            i = "■" * (n * 25 // 101)
+            if n < 33:
+                live.update(f"|{n}%|[[rgb(200,0,200)]{i}[/]]")
+
+            else:
+                live.update(f"|{n}%|[[rgb(200,0,200)]{i}[/]]")
+
+            sleep(0.01)
+        live.update(f"|{n}%|[[rgb(200,0,200)]{i}[/]]")
+
+
+def cor_alerta(texto):  # Converte um Texto em uma msg de alerta piscando em vermelho
+    with Live("", refresh_per_second=20) as live:
+        cores = ["[rgb(85,0,0)]", "[rgb(170,0,0)]", "[rgb(255,0,0)]"]
+        for i in range(10):
+            for cor in cores:
+                live.update(f"{cor}{texto}[/]")
+                sleep(0.05)
 
 
 def continuar():
@@ -55,6 +89,33 @@ def carregar_json():
     except FileNotFoundError:
         escrever_json()
 
+
+def menu_principal():
+    while True:
+        print(
+            Panel(
+                """|[cyan]1[/]| [white]:desktop_computer: Acessar Conta[/]   ([white]Aperte[/] '[green]+[/]' [white]para ADM[/])
+|[cyan]2[/]| [white]:dollar: Sacar[/]
+|[cyan]3[/]| [white]:moneybag: Depositar[/]
+|[cyan]4[/]| [white]:money_with_wings: Transferir[/]
+|[red]0[/]| [red]:x: Sair[/]""",
+                title="[cyan]A[/][white]LPHA[/] [rgb(160,0,160)]B[/][white]ANK[/] :bank:",
+                style="rgb(180,0,135)",
+                width=50,
+            )
+        )
+        opc = input("Opção: ").strip()
+
+        if opc == "+":
+            break
+
+        elif not opc.isdecimal() or len(opc) != 1:
+            cor_alerta("[white]Opção[/] Invalida!")
+            continuar()
+            continue
+        break
+    
+    return opc
 
 # Classes ↓
 
@@ -157,15 +218,20 @@ class Titular(Conta_Bancaria):
 
 
 # Main ↓
+loading()
+sleep(1)
+menu_principal()
 
-titular1 = Titular(email="exemplo1@gmail.com", usuario="Exemplo 1", senha="09072026")
-titular2 = Titular(email="exemplo2@gmail.com", usuario="Exemplo 2", senha="09072026")
-titular3 = Titular(email="exemplo3@gmail.com", usuario="Exemplo 3", senha="09072026")
+# titular1 = Titular(email="exemplo1@gmail.com", usuario="Exemplo 1", senha="09072026")
+# titular2 = Titular(email="exemplo2@gmail.com", usuario="Exemplo 2", senha="09072026")
+# titular3 = Titular(email="exemplo3@gmail.com", usuario="Exemplo 3", senha="09072026")
 
-titular1.exibir_conta()
-titular2.exibir_conta()
-titular3.exibir_conta()
-limpar_terminal()
-titular1.inserir_cartao()
-titular1.depositar(500)
-titular1.sacar(200)
+# loading()
+
+# titular1.exibir_conta()
+# titular2.exibir_conta()
+# titular3.exibir_conta()
+
+# titular1.inserir_cartao()
+# titular1.depositar(500)
+# titular1.sacar(200)
