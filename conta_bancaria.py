@@ -30,7 +30,9 @@ else:
         os.path.abspath(__file__)
     )  # Localiza o diretorio do programa se (srcipt)
 
-arquivo_json = os.path.join(local_script, "contas.json")
+contas_json = os.path.join(local_script, "contas.json")
+
+admins_json = os.path.join(local_script, "admins.json")
 
 # Funcões ↓
 
@@ -66,6 +68,15 @@ def cor_alerta(texto):  # Converte um Texto em uma msg de alerta piscando em ver
                 sleep(0.05)
 
 
+def cor_destaque(texto):  # Converte um Texto em uma msg em destaque piscando em verde
+    with Live("", refresh_per_second=20) as live:
+        cores = ["[rgb(0,85,0)]", "[rgb(0,170,0)]", "[rgb(0,255,0)]"]
+        for i in range(5):
+            for cor in cores:
+                live.update(f"{cor}{texto}[/]")
+                sleep(0.1)
+
+
 def continuar():
     Prompt.ask("Aperte [cyan]ENTER[/] para continuar")
     limpar_terminal()
@@ -76,7 +87,7 @@ def criptografar(senha):
 
 
 def escrever_json():
-    with open(arquivo_json, "w", encoding="utf-8") as arq:
+    with open(contas_json, "w", encoding="utf-8") as arq:
         json.dump(contas, arq, indent=4, ensure_ascii=False)
 
 
@@ -84,63 +95,118 @@ def carregar_json():
     global contas
 
     try:
-        with open(arquivo_json, "r", encoding="utf-8") as arq:
+        with open(contas_json, "r", encoding="utf-8") as arq:
             contas = json.load(arq)
 
     except FileNotFoundError:
         escrever_json()
 
 
-def menu_principal():
-    while True:
-        print(
-            Panel(
-                """\n|[cyan]1[/]|[white]:mag_right: Verificar Saldo[/]  [[white]Aperte[/] |[rgb(0,255,0)]+[/]| [white]menu[/] [rgb(0,200,0)]ADM[/]]
-|[cyan]2[/]|[white]:dollar: Sacar[/]
-|[cyan]3[/]|[white]:moneybag: Depositar[/]
-|[cyan]4[/]|[white]:money_with_wings: Transferir[/]
-|[red]0[/]|[red]:x: Sair[/]\n""",
-                title="[cyan]A[/][white]LPHA[/] [rgb(160,0,160)]B[/][white]ANK[/] :bank:",
-                style="rgb(180,0,135)",
-                width=50,
-            )
-        )
-        opc = input("Opção: ").strip()
+def carregar_adm():
+    global adm
 
-        if opc == "+":
+    try:
+        with open(admins_json, "r", encoding="utf-8") as arq:
+            adm = json.load(arq)
+
+    except FileNotFoundError:
+        print(f"Nenhum Admin Cadastrado!")
+        continuar()
+        return 0
+
+
+def encontrar_adm(admin):
+    for i, item in enumerate(adm):
+        if item["Admin"] == admin:
+            return i
+        return -1
+
+
+def verificar_adm():
+    while True:
+        login = input("Admin: ").strip()
+
+        if not login:
+            limpar_terminal()
+            continue
+
+        senha = getpass(prompt="Senha: ", mask="•")
+
+        idx = encontrar_adm(login)
+
+        if idx != -1 and adm[idx]["Senha"] == criptografar(senha):
+            cor_destaque(f"[cyan]Seja Bem Vindo![/] {login.upper()}")
+            continuar()
             break
 
-        elif not opc.isdecimal() or len(opc) != 1:
-            cor_alerta("[white]Opção[/] Invalida!")
+        else:
+            cor_alerta("[white]Usuario ou Senha[/] Invalida!")
             continuar()
-            continue
-        break
+            return 0
 
+
+def menu_principal():
+    print(
+        Panel(
+            """\n|[cyan]1[/]|[white]:mag_right: Verificar Saldo[/]  [[white]Aperte[/] |[rgb(0,255,0)]9[/]| [white]menu[/] [rgb(0,200,0)]ADM[/]]\n|[cyan]2[/]|[white]:dollar: Sacar[/]\n|[cyan]3[/]|[white]:moneybag: Depositar[/]\n|[cyan]4[/]|[white]:money_with_wings: Transferir[/]\n|[red]0[/]|[red]:x: Sair[/]\n""",
+            title="[cyan]A[/][white]LPHA[/] [rgb(160,0,160)]B[/][white]ANK[/] :bank:",
+            style="rgb(180,0,135)",
+            width=50,
+        )
+    )
+    opc = int(input("Opção: "))
     return opc
+
+
+def verificar_saldo():
+    pass
+
+
+def sacar():
+    pass
+
+
+def depositar():
+    pass
+
+
+def transferir():
+    pass
 
 
 def menu_adm():
-    while True:
-        print(
-            Panel(
-                """\n|[cyan]1[/]|[white]:writing_hand:  Cadastrar Titular[/]
-|[cyan]2[/]|[white] :wastebasket: Remover Titular[/]
-|[cyan]3[/]|[white]:clipboard: Lista de Contas[/]
-|[yellow]0[/]|[yellow]:back: Menu Anterior[/]\n""",
-                title="[rgb(0,200,0)]=ADM=[/]",
-                style="rgb(180,0,135)",
-                width=30,
-            )
+    tentativa = carregar_adm()
+
+    if tentativa == 0:
+        return
+
+    altenticar = verificar_adm()
+
+    if altenticar == 0:
+        return
+
+    print(
+        Panel(
+            """\n|[cyan]1[/]|[white]:writing_hand:  Cadastrar Titular[/]\n|[cyan]2[/]|[white] :wastebasket: Remover Titular[/]\n|[cyan]3[/]|[white]:clipboard: Lista de Contas[/]\n|[yellow]0[/]|[yellow]:back: Menu Anterior[/]\n""",
+            title="[rgb(0,200,0)]=ADM=[/]",
+            style="rgb(180,0,135)",
+            width=30,
         )
-        opc = input("Opção: ").strip()
-
-        if not opc.isdecimal() or len(opc) != 1:
-            cor_alerta("[white]Opção[/] Invalida!")
-            continuar()
-            continue
-        break
-
+    )
+    opc = int(input("Opção: "))
     return opc
+
+
+def cadastrar():
+    pass
+
+
+def remover():
+    pass
+
+
+def lista_contas():
+    pass
 
 
 # Classes ↓
@@ -265,19 +331,67 @@ sleep(1)
 continuar()
 
 while True:
-    opcao_mp = menu_principal()
-
-    if opcao_mp == "+":
+    try:
         limpar_terminal()
-        
-    opcao_madm = menu_adm()
-    
-    if opcao_madm == 0:
-        continue
-    
-    limpar_terminal()
+        opcao_mp = menu_principal()
 
-        
+        match opcao_mp:
+            case 1:
+                pass
+
+            case 2:
+                pass
+
+            case 3:
+                pass
+
+            case 4:
+                pass
+
+            case 9:
+                limpar_terminal()
+                opcao_madm = menu_adm()
+
+                match opcao_madm:
+                    case 1:
+                        pass
+
+                    case 2:
+                        pass
+
+                    case 3:
+                        pass
+
+                    case 0:
+                        continue
+
+                    case _:
+                        cor_alerta(f"[white]A Opção[/] [cyan]{opcao_madm}[/] não existe!")
+                        continuar()
+
+            case 0:
+                limpar_terminal()
+                print("Saindo...")
+
+                with Live("", refresh_per_second=20) as live:
+                    tchau = [":hand:", ":wave:"]
+                    for v in range(3):
+                        for i in tchau:
+                            live.update(f"Ate Mais!{i}")
+                            sleep(0.3)
+                break
+
+            case _:
+                cor_alerta(f"[white]A Opção[/] [cyan]{opcao_mp}[/] não existe!")
+                continuar()
+
+    except ValueError as erro:
+        limpar_terminal()
+        cor_alerta(
+            f"[cyan]Digite Somente uma das Opções Apresentadas![/]\n[yellow]Erro:[/] {erro}"
+        )
+        continuar()
+
 # titular1 = Titular(usuario="Exemplo 1", senha="090726", saldo=1000)
 # titular2 = Titular(usuario="Exemplo 2", senha="090726", saldo=950)
 # titular3 = Titular(usuario="Exemplo 3", senha="090726", saldo=1350)
