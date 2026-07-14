@@ -119,7 +119,7 @@ def encontrar_adm(admin):
     for i, item in enumerate(adm):
         if item["Admin"] == admin:
             return i
-        return -1
+    return -1
 
 
 def verificar_adm():
@@ -175,16 +175,6 @@ def transferir():
 
 
 def menu_adm():
-    tentativa = carregar_adm()
-
-    if tentativa == 0:
-        return
-
-    altenticar = verificar_adm()
-
-    if altenticar == 0:
-        return
-
     print(
         Panel(
             """\n|[cyan]1[/]|[white]:writing_hand:  Cadastrar Titular[/]\n|[cyan]2[/]|[white] :wastebasket: Remover Titular[/]\n|[cyan]3[/]|[white]:clipboard: Lista de Contas[/]\n|[yellow]0[/]|[yellow]:back: Menu Anterior[/]\n""",
@@ -350,6 +340,16 @@ while True:
 
             case 9:
                 limpar_terminal()
+                tentativa = carregar_adm()
+
+                if tentativa == 0:
+                    continue
+
+                altenticar = verificar_adm()
+
+                if altenticar == 0:
+                    continue
+
                 opcao_madm = menu_adm()
 
                 match opcao_madm:
@@ -366,7 +366,9 @@ while True:
                         continue
 
                     case _:
-                        cor_alerta(f"[white]A Opção[/] [cyan]{opcao_madm}[/] não existe!")
+                        cor_alerta(
+                            f"[white]A Opção[/] [cyan]{opcao_madm}[/] não existe!"
+                        )
                         continuar()
 
             case 0:
