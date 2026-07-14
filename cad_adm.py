@@ -1,7 +1,11 @@
 # Bibliotecas
-
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import print
 from stdiomask import getpass
 from hashlib import sha256
+from time import sleep
 import platform
 import json
 import os
@@ -70,23 +74,53 @@ def carregar_json():
         escrever_json()
 
 
+def achar_adm(adm):
+    for i, item in enumerate(adms):
+        if item["Admin"] == adm:
+            return i
+    return -1
+
+
+def menu():
+    print(Panel("|1| Cadastrar\n|2| Remover\n|3| Cadastrados\n|0| Sair", title="Menu", width=20))
+
+    opc = int(input("Escolha uma Opção: "))
+    return opc
+
+
 def cadastrar():
+    limpar_terminal()
+    
     while True:
-        print(10 * "=", "Cadastro de Admin", 10 * "=")
-        print()
-        admin = input("Digite um Usuário: ").strip()
+        admin = input("Digite um Usuário (|0| pra voltar!): ").strip()
+
+        if admin == "0":
+            return
 
         if not admin or not admin.isalpha():
-            print("Usuário Invalido!")
+            print("\nTipo de Usuário Invalido!")
+            input("'Enter' para continuar...")
+            limpar_terminal()
+            continue
+
+        idx = achar_adm(admin)
+
+        if idx != -1:
+            print("O Adm ja existe!")
+            input("'Enter' para continuar...")
+            limpar_terminal()
             continue
 
         senha = getpass(prompt="Crie uma Senha (8 Caracteres): ", mask="•").strip()
 
         if not senha or len(senha) < 8:
-            print("Senha Invalida!")
+            print("Tipo de Senha Invalida!")
+            input("'Enter' para continuar...")
+            limpar_terminal()
             continue
 
-        print("ADM Criado com Sussesso!")
+        print("\nADM Criado com Sucesso!")
+        input("'Enter' para continuar...")
         break
 
     adm = Adm(admin, crip_senha(senha))
@@ -94,10 +128,107 @@ def cadastrar():
     escrever_json()
 
 
+def remover():
+    limpar_terminal()
+    
+    if not adms:
+        print("Lista de Admins Vazia!")
+        return
+
+    while True:
+        admin = input("Admin a Remover (|0| para voltar!): ").strip()
+
+        if admin == "0":
+            return
+
+        if not admin:
+            limpar_terminal()
+            continue
+        break
+        
+    senha = getpass(prompt="Senha: ", mask="•")
+    
+    idx = achar_adm(admin)
+        
+    if idx != -1 and adms[idx]["Senha"] == crip_senha(senha):
+        while True:
+            remover = (
+                input("Tem certeza que deseja excluir a conta? ([S] || [N]): ")
+                .strip()
+                .upper()
+            )
+            match remover:
+                case "S":
+                    adms.pop(idx)
+                    escrever_json()
+                    print("\nAdmin Removido com Sucesso!")
+                    input("'Enter' para continuar...")
+                    break
+
+                case "N":
+                    print("Voltando ao menu...")
+                    sleep(1)
+                    break
+
+                case _:
+                    limpar_terminal()
+                    continue
+    
+    else:
+        print("Admin ou Senha Invalida!")
+        input("'Enter' para continuar...")
+
+
+def cadastrados():
+    limpar_terminal()
+    console = Console()
+    tb = Table(title="Admins")
+
+    tb.add_column("ID")
+    tb.add_column("Adms")
+    for item in adms:
+        tb.add_row(
+            f"{item['ID']}",
+            f"{item['Admin']}",
+        )
+    
+    console.print(tb)
+    
+    input("'Enter' para continuar...")
+    return
+
+
 # Main
 
-limpar_terminal()
-cadastrar()
+carregar_json()
 
-for item in adms:
-    print(f"|{item['ID']}| - {item['Admin']}")
+while True:
+    try:
+        limpar_terminal()
+        opcao = menu()
+
+        match opcao:
+            case 1:
+                cadastrar()
+
+            case 2:
+                remover()
+
+            case 3:
+                cadastrados()
+
+            case 0:
+                print("Saindo...")
+                sleep(1)
+                limpar_terminal()
+                break
+            
+            case _:
+                print("Digite apenas uma das opções apresentadas!")
+                input("'Enter' para continuar...")
+
+    except ValueError as erro:
+        print(erro)
+        print("Digite apenas uma das opções apresentadas!")
+        input("'Enter' para continuar...")
+        continue
