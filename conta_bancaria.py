@@ -1,4 +1,4 @@
-# Bibliotecas ↓
+# region Bibliotecas ↓
 
 from rich.live import Live
 from rich.panel import Panel
@@ -14,8 +14,9 @@ import platform
 import os
 import sys
 import json
+# endregion
 
-# Variaveis ↓
+# region Variaveis ↓
 
 adm = []
 contas = []
@@ -33,8 +34,9 @@ else:
 contas_json = os.path.join(local_script, "contas.json")
 
 admins_json = os.path.join(local_script, "admins.json")
+# endregion
 
-# Funcões ↓
+# region Funcões ↓
 
 
 def limpar_terminal():
@@ -83,7 +85,7 @@ def continuar():
 
 
 def criptografar(senha):
-    return sha256(senha.encode()).hexdigest()
+    return sha256(str(senha).encode()).hexdigest()
 
 
 def escrever_json():
@@ -110,9 +112,16 @@ def carregar_adm():
             adm = json.load(arq)
 
     except FileNotFoundError:
-        print(f"Nenhum Admin Cadastrado!")
+        print("Nenhum Admin Cadastrado!")
         continuar()
         return 0
+
+
+def encontrar_titular(titular):
+    for i, item in enumerate(contas):
+        if item["Titular"] == titular:
+            return i
+    return -1
 
 
 def encontrar_adm(admin):
@@ -188,9 +197,57 @@ def menu_adm():
 
 
 def cadastrar():
-    pass
+    limpar_terminal()
+    
+    
+    while True:
+        usuario = str(input("Digite o Nome do Titular: ")).strip().title()
 
+        if not usuario:
+            limpar_terminal()
+            continue
+        
+        if usuario.isnumeric():
+            cor_alerta("\n[white]Nome[/] Invalido!")
+            continuar()
+            continue
+        
+        achar = encontrar_titular(usuario)
+        
+        if achar == -1:
+            cor_alerta("[white]O Titular já[/] existe!")
+            continuar()
+            continue
+        
+        break
 
+    while True:
+        try:
+            senha = int(getpass(prompt="Cadastre uma senha de 6 Digitos: ", mask="•"))
+
+            if not senha:
+                limpar_terminal()
+                continue
+            
+            if len(str(senha)) != 6:
+                cor_alerta("[white]Forma de Senha[/] Invalida!")
+                continuar()
+                continue
+
+        except ValueError as erro:
+            cor_alerta(f"[white]Digite Apenas[/] [green]Numeros![/]\n[yellow]ERRO: {erro}")
+            continuar()
+            continue
+        break
+    
+    titular = Titular(usuario=usuario, senha=criptografar(senha))
+    contas.append({"ID": titular.exibir_id(), "Titular": titular.exibir_usuario(), "Senha": titular.exibir_senha(), "Saldo": titular.exibir_saldo()})
+
+    escrever_json()
+    cor_destaque("[white]Conta Cadastrada Com[/] Suscesso!")
+    continuar()
+
+    
 def remover():
     pass
 
@@ -199,7 +256,9 @@ def lista_contas():
     pass
 
 
-# Classes ↓
+# endregion
+
+# region Classes ↓
 
 
 class Conta_Bancaria:
@@ -234,6 +293,9 @@ class Titular(Conta_Bancaria):
         print(
             f"ID: {self.exibir_id()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
         )
+
+    def exibir_senha(self):
+       return self.__senha
 
     def validar_senha(self):
         while True:
@@ -313,7 +375,9 @@ class Titular(Conta_Bancaria):
             print("Insira o Cartão Para Transferir!")
 
 
-# Main ↓
+# endregion
+
+# region Main ↓
 
 limpar_terminal()
 loading()
@@ -354,7 +418,7 @@ while True:
 
                 match opcao_madm:
                     case 1:
-                        pass
+                        cadastrar()
 
                     case 2:
                         pass
@@ -393,34 +457,6 @@ while True:
             f"[cyan]Digite Somente uma das Opções Apresentadas![/]\n[yellow]Erro:[/] {erro}"
         )
         continuar()
+# endregion
 
-# titular1 = Titular(usuario="Exemplo 1", senha="090726", saldo=1000)
-# titular2 = Titular(usuario="Exemplo 2", senha="090726", saldo=950)
-# titular3 = Titular(usuario="Exemplo 3", senha="090726", saldo=1350)
-
-# loading()
-
-# titular1.exibir_conta()
-# titular2.exibir_conta()
-# titular3.exibir_conta()
-
-# titular1.inserir_cartao()
-# titular1.depositar(500)
-# titular1.sacar(200)
-
-# titular1.exibir_conta()
-# titular2.exibir_conta()
-
-# titular1.inserir_cartao()
-
-# conta = str(input("Qual conta voce quer transferir?: "))
-
-# if conta in titular2.exibir_usuario():
-#     conta = titular2
-
-# valor = int(input("Qual o valor?: "))
-
-# titular1.transferir(conta, valor)
-
-# titular1.exibir_conta()
-# titular2.exibir_conta()
+limpar_terminal()
