@@ -1,4 +1,5 @@
 # Bibliotecas
+
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -17,6 +18,16 @@ adms = []
 local_script = os.path.dirname(os.path.abspath(__file__))
 
 arquivo_json = os.path.join(local_script, "admins.json")
+
+#region Caracteres para Senhas ↓
+
+minusculas = "abcdefghijklmnopqrstuvwxyz"
+maiusculas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+numeros = "0123456789"
+simbolos = '!@#$%^&*()-_=+[]{}|;:,.<>?/~'
+caracters = minusculas + maiusculas + numeros + simbolos
+
+#endregion
 
 # Classes
 
@@ -58,6 +69,25 @@ def crip_senha(senha):
     return sha256(senha.encode()).hexdigest()
 
 
+def validar_senha(senha):
+    if len(senha) < 8:
+        return False, "A senha deve ter no mínimo 8 caracteres."
+    
+    tem_minuscula = any(c in minusculas for c in senha)
+    tem_maiuscula = any(c in maiusculas for c in senha)
+    tem_numero = any(c in numeros for c in senha)
+    tem_simbolo = any(c in simbolos for c in senha)
+    
+    if not (tem_minuscula and tem_maiuscula and tem_numero and tem_simbolo):
+        return False, "A senha deve conter letras maiúsculas, minúsculas, números e símbolos."
+    
+    for caractere in senha:
+        if caractere not in caracters:
+            return False, f"O caractere '{caractere}' não é permitido na senha."
+            
+    return True, "Senha válida! Cadastro concluído."
+
+
 def escrever_json():
     with open(arquivo_json, "w", encoding="utf-8") as arq:
         json.dump(adms, arq, indent=4, ensure_ascii=False)
@@ -92,7 +122,7 @@ def cadastrar():
     limpar_terminal()
     
     while True:
-        admin = input("Digite um Usuário (|0| pra voltar!): ").strip()
+        admin = input("Digite um Nome de Usuário (|0| pra voltar!): ").strip()
 
         if admin == "0":
             return
@@ -113,8 +143,10 @@ def cadastrar():
 
         senha = getpass(prompt="Crie uma Senha (8 Caracteres): ", mask="•").strip()
 
-        if not senha or len(senha) < 8:
-            print("Tipo de Senha Invalida!")
+        valida, msg = validar_senha(senha)
+
+        if not valida:
+            print(f"Tipo de Senha Invalida! {msg}")
             input("'Enter' para continuar...")
             limpar_terminal()
             continue

@@ -1,5 +1,6 @@
 # region Bibliotecas ↓
 
+from rich.table import Table
 from rich.live import Live
 from rich.panel import Panel
 from rich.console import Console
@@ -34,6 +35,101 @@ else:
 contas_json = os.path.join(local_script, "contas.json")
 
 admins_json = os.path.join(local_script, "admins.json")
+# endregion
+
+# region Classes ↓
+
+
+class Conta_Bancaria:
+    def __init__(self, id=0, saldo=0):
+        self.__id = id
+        self.__saldo = saldo
+
+    def exibir_id(self):
+        return self.__id
+
+    def exibir_saldo(self):
+        return self.__saldo
+
+    def alterar_saldo(self, valor):
+        self.__saldo = valor
+
+
+class Titular(Conta_Bancaria):
+    def __init__(self, id=0, saldo=0, usuario="", senha=""):
+        super().__init__(id, saldo)
+        self.__usuario = usuario
+        self.__senha = senha
+        self.__cartao_inserido = False
+
+    def exibir_usuario(self):
+        return self.__usuario
+
+    def exibir_senha(self):
+        return self.__senha
+
+    def exibir_conta(self):
+        return f"ID: {self.exibir_id()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
+
+    def inserir_cartao(self):
+        self.__cartao_inserido = True
+        return self.__cartao_inserido
+
+    def remover_cartao(self):
+        self.__cartao_inserido = False
+        return self.__cartao_inserido
+
+    def cartao_ativo(self):
+        return self.__cartao_inserido
+
+    def sacar(self, valor):
+        if self.cartao_ativo():
+            self.validar_senha()
+
+            if valor <= 0:
+                return "Valor Invalido!"
+
+            elif valor <= self.exibir_saldo():
+                self.alterar_saldo(self.exibir_saldo() - valor)
+                return f"Você sacou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
+
+            else:
+                return f"Valor do saque acima do seu saldo R${self.exibir_saldo():.2f}"
+
+        else:
+            return "Insira o Cartão Para Sacar!"
+
+    def depositar(self, valor):
+        self.validar_senha()
+
+        if self.cartao_ativo():
+            if valor <= 0:
+                return "Valor Invalido!"
+
+            else:
+                self.alterar_saldo(self.exibir_saldo() + valor)
+                return f"Você depositou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
+
+        else:
+            return "Insira o Cartão Para Depositar!"
+
+    def transferir(self, conta, valor):
+        self.validar_senha()
+
+        if self.cartao_ativo():
+            if valor <= 0:
+                return "Valor Invalido!"
+
+            if valor <= self.exibir_saldo():
+                self.alterar_saldo(self.exibir_saldo() - valor)
+                conta.alterar_saldo(conta.exibir_saldo() + valor)
+
+            else:
+                return f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
+        else:
+            return "Insira o Cartão Para Transferir!"
+
+
 # endregion
 
 # region Funcões ↓
@@ -198,181 +294,175 @@ def menu_adm():
 
 def cadastrar():
     limpar_terminal()
-    
-    
+
     while True:
-        usuario = str(input("Digite o Nome do Titular: ")).strip().title()
+        usuario = (
+            str(input("Digite o Nome do Titular ([0] para sair!): ")).strip().title()
+        )
+
+        if usuario == "0":
+            limpar_terminal()
+            return
 
         if not usuario:
             limpar_terminal()
             continue
-        
-        if usuario.isnumeric():
+
+        elif usuario.isnumeric():
             cor_alerta("\n[white]Nome[/] Invalido!")
             continuar()
             continue
-        
-        achar = encontrar_titular(usuario)
-        
-        if achar == -1:
+
+        achar = encontrar_titular(usuario.title())
+
+        if achar != -1:
             cor_alerta("[white]O Titular já[/] existe!")
             continuar()
             continue
-        
+
         break
 
     while True:
         try:
-            senha = int(getpass(prompt="Cadastre uma senha de 6 Digitos: ", mask="•"))
+            senha = int(
+                getpass(
+                    prompt="Cadastre uma senha de 6 Digitos ([0] para sair!): ",
+                    mask="•",
+                )
+            )
+            if senha == 0:
+                limpar_terminal()
+                return
 
             if not senha:
                 limpar_terminal()
                 continue
-            
-            if len(str(senha)) != 6:
+
+            elif len(str(senha)) != 6:
                 cor_alerta("[white]Forma de Senha[/] Invalida!")
+                print("A senha deve conter apenas 6 digitos!")
                 continuar()
                 continue
 
         except ValueError as erro:
-            cor_alerta(f"[white]Digite Apenas[/] [green]Numeros![/]\n[yellow]ERRO: {erro}")
+            cor_alerta(
+                f"[white]Digite Apenas[/] [green]Numeros![/]\n[yellow]ERRO: {erro}"
+            )
             continuar()
             continue
         break
-    
-    titular = Titular(usuario=usuario, senha=criptografar(senha))
-    contas.append({"ID": titular.exibir_id(), "Titular": titular.exibir_usuario(), "Senha": titular.exibir_senha(), "Saldo": titular.exibir_saldo()})
+    titular = Titular(id=1, usuario=usuario, senha=criptografar(senha))
+
+    id_atual = titular.exibir_id()
+
+    for i, item in enumerate(contas):
+        if item["ID"] >= id_atual:
+            id_atual = item["ID"] + 1
+
+    contas.append(
+        {
+            "ID": id_atual,
+            "Titular": titular.exibir_usuario(),
+            "Senha": titular.exibir_senha(),
+            "Saldo": f"{titular.exibir_saldo():.2f}",
+        }
+    )
 
     escrever_json()
     cor_destaque("[white]Conta Cadastrada Com[/] Suscesso!")
     continuar()
 
-    
+
 def remover():
-    pass
+    if not contas:
+        cor_alerta("[white]A lista de Contas está[/] Vazia!")
+        continuar()
+        return
+
+    limpar_terminal()
+    while True:
+        try:
+            achar_id = int(
+                input("Qual ID você gostaria de remover? ([0] para sair!): ")
+            )
+
+            if achar_id == 0:
+                limpar_terminal()
+                return
+
+            if not achar_id:
+                limpar_terminal()
+                continue
+
+            while True:
+                cor_destaque(
+                    "[white]Antes de Remover, e recomendado que o[/] [cyan]Titular[/] [white]saque seu[/] saldo!"
+                )
+                sleep(1)
+
+                escolha = (
+                    str(
+                        input(
+                            "Tem certeza que deseja excluir a conta? ([S]Sim | [N] Não) "
+                        )
+                    )
+                    .strip()
+                    .upper()
+                )
+
+                match escolha:
+                    case "S":
+                        break
+
+                    case "N":
+                        print("Voltando ao Menu...")
+                        sleep(1)
+                        limpar_terminal()
+                        return
+
+                    case _:
+                        limpar_terminal()
+                        continue
+
+            for i, item in enumerate(contas):
+                if item["ID"] == achar_id:
+                    cor_destaque(
+                        f"[white]Titular[/] {item['Titular']} [white]Removido com[/] [cyan]Sucesso![/]"
+                    )
+                    contas.pop(i)
+            escrever_json()
+            continuar()
+
+        except ValueError as erro:
+            limpar_terminal()
+            cor_alerta(f"[white]Digite um ID Valido![/]\n[yellow]Erro:[/] {erro}")
+            continuar()
+            continue
+        break
 
 
 def lista_contas():
-    pass
+    if not contas:
+        cor_alerta("[white]A lista de Contas está[/] Vazia!")
+        continuar()
+        return
 
+    console = Console()
+    tabela = Table(title="[white bold]Contas[/]", style="rgb(180,0,135)")
 
-# endregion
+    tabela.add_column("[rgb(180,0,135)]ID[/]", justify="center")
+    tabela.add_column("[blue]Titular[/]", justify="center")
+    tabela.add_column("[green]Saldo[/]", justify="center")
 
-# region Classes ↓
-
-
-class Conta_Bancaria:
-    _proximo_id = 1
-
-    def __init__(self, saldo=0):
-        self.__id = Conta_Bancaria._proximo_id
-        Conta_Bancaria._proximo_id += 1
-        self.__saldo = saldo
-
-    def exibir_id(self):
-        return self.__id
-
-    def exibir_saldo(self):
-        return self.__saldo
-
-    def alterar_saldo(self, valor):
-        self.__saldo = valor
-
-
-class Titular(Conta_Bancaria):
-    def __init__(self, saldo=0, usuario="", senha=""):
-        super().__init__(saldo)
-        self.__usuario = usuario
-        self.__senha = senha
-        self.__cartao_inserido = False
-
-    def exibir_usuario(self):
-        return self.__usuario
-
-    def exibir_conta(self):
-        print(
-            f"ID: {self.exibir_id()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
+    for i, item in enumerate(contas):
+        tabela.add_row(
+            f"[cyan]{item['ID']}[/]",
+            f"[white]{item['Titular']}[/]",
+            f"[green]R$[/] [white]{item['Saldo']}[/]",
         )
 
-    def exibir_senha(self):
-       return self.__senha
-
-    def validar_senha(self):
-        while True:
-            senha = input("Senha: ").strip()
-
-            if not senha.isnumeric() or senha != self.__senha:
-                print("Senha Invalida!")
-                continue
-
-            break
-
-    def inserir_cartao(self):
-        print(f"Bem Vindo {self.exibir_usuario()}!")
-
-        self.__cartao_inserido = True
-        return self.__cartao_inserido
-
-    def remover_cartao(self):
-        print(f"Até Mais {self.exibir_usuario()}!")
-
-        self.__cartao_inserido = False
-        return self.__cartao_inserido
-
-    def cartao_ativo(self):
-        return self.__cartao_inserido
-
-    def sacar(self, valor):
-        if self.cartao_ativo():
-            self.validar_senha()
-
-            if valor <= 0:
-                print("Valor Invalido!")
-
-            if valor <= self.exibir_saldo():
-                self.alterar_saldo(self.exibir_saldo() - valor)
-                print(
-                    f"Você sacou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
-                )
-            else:
-                print(f"Valor do saque acima do seu saldo R${self.exibir_saldo():.2f}")
-
-        else:
-            print("Insira o Cartão Para Sacar!")
-
-    def depositar(self, valor):
-        self.validar_senha()
-
-        if self.cartao_ativo():
-            if valor <= 0:
-                print("Valor Invalido!")
-
-            else:
-                self.alterar_saldo(self.exibir_saldo() + valor)
-                print(
-                    f"Você depositou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
-                )
-
-        else:
-            print("Insira o Cartão Para Depositar!")
-
-    def transferir(self, conta, valor):
-        self.validar_senha()
-
-        if self.cartao_ativo():
-            if valor <= 0:
-                print("Valor Invalido!")
-
-            if valor <= self.exibir_saldo():
-                self.alterar_saldo(self.exibir_saldo() - valor)
-                conta.alterar_saldo(conta.exibir_saldo() + valor)
-
-            else:
-                print(
-                    f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
-                )
-        else:
-            print("Insira o Cartão Para Transferir!")
+    console.print(tabela)
+    continuar()
 
 
 # endregion
@@ -381,8 +471,8 @@ class Titular(Conta_Bancaria):
 
 limpar_terminal()
 loading()
+carregar_json()
 sleep(1)
-continuar()
 
 while True:
     try:
@@ -414,26 +504,32 @@ while True:
                 if altenticar == 0:
                     continue
 
-                opcao_madm = menu_adm()
+                while True:
+                    opcao_madm = menu_adm()
 
-                match opcao_madm:
-                    case 1:
-                        cadastrar()
+                    match opcao_madm:
+                        case 1:
+                            cadastrar()
+                            continue
 
-                    case 2:
-                        pass
+                        case 2:
+                            remover()
+                            continue
 
-                    case 3:
-                        pass
+                        case 3:
+                            lista_contas()
+                            continue
 
-                    case 0:
-                        continue
+                        case 0:
+                            continue
 
-                    case _:
-                        cor_alerta(
-                            f"[white]A Opção[/] [cyan]{opcao_madm}[/] não existe!"
-                        )
-                        continuar()
+                        case _:
+                            cor_alerta(
+                                f"[white]A Opção[/] [cyan]{opcao_madm}[/] não existe!"
+                            )
+                            continuar()
+                            continue
+                    break
 
             case 0:
                 limpar_terminal()
