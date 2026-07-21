@@ -40,7 +40,7 @@ admins_json = os.path.join(local_script, "admins.json")
 # region Classes ↓
 
 
-class Conta_Bancaria:
+class ContaBancaria:
     def __init__(self, id=0, saldo=0):
         self.__id = id
         self.__saldo = saldo
@@ -55,7 +55,7 @@ class Conta_Bancaria:
         self.__saldo = valor
 
 
-class Titular(Conta_Bancaria):
+class Titular(ContaBancaria):
     def __init__(self, id=0, saldo=0, usuario="", senha=""):
         super().__init__(id, saldo)
         self.__usuario = usuario
@@ -364,7 +364,7 @@ def cadastrar():
             "ID": id_atual,
             "Titular": titular.exibir_usuario(),
             "Senha": titular.exibir_senha(),
-            "Saldo": f"{titular.exibir_saldo():.2f}",
+            "Saldo": round(float(titular.exibir_saldo()), 2),
         }
     )
 
