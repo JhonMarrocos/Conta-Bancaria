@@ -122,7 +122,7 @@ def cadastrar():
     limpar_terminal()
     
     while True:
-        admin = input("Digite um Nome de Usuário (|0| pra voltar!): ").strip()
+        admin = str(input("Digite um Nome de Usuário (|0| pra voltar!): ")).strip().title()
 
         if admin == "0":
             return

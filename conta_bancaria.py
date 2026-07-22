@@ -1,5 +1,6 @@
 # region Bibliotecas ↓
 
+from rich.text import Text
 from rich.table import Table
 from rich.live import Live
 from rich.panel import Panel
@@ -21,6 +22,7 @@ import json
 
 adm = []
 contas = []
+console = Console()
 
 if getattr(sys, "frozen", False):
     local_script = os.path.dirname(
@@ -48,6 +50,9 @@ class ContaBancaria:
     def exibir_id(self):
         return self.__id
 
+    def alterar_id(self, id):
+        self.__id = id
+
     def exibir_saldo(self):
         return self.__saldo
 
@@ -60,75 +65,54 @@ class Titular(ContaBancaria):
         super().__init__(id, saldo)
         self.__usuario = usuario
         self.__senha = senha
-        self.__cartao_inserido = False
 
     def exibir_usuario(self):
         return self.__usuario
 
+    def alterar_usuario(self, titular):
+        self.__usuario = titular
+
     def exibir_senha(self):
         return self.__senha
+
+    def alterar_senha(self, senha):
+        self.__senha = senha
 
     def exibir_conta(self):
         return f"ID: {self.exibir_id()}, Titular: {self.exibir_usuario()}, Saldo: R${self.exibir_saldo():.2f}"
 
-    def inserir_cartao(self):
-        self.__cartao_inserido = True
-        return self.__cartao_inserido
-
-    def remover_cartao(self):
-        self.__cartao_inserido = False
-        return self.__cartao_inserido
-
-    def cartao_ativo(self):
-        return self.__cartao_inserido
-
     def sacar(self, valor):
-        if self.cartao_ativo():
-            self.validar_senha()
 
-            if valor <= 0:
-                return "Valor Invalido!"
+        if valor <= 0:
+            return "Valor Invalido!"
 
-            elif valor <= self.exibir_saldo():
-                self.alterar_saldo(self.exibir_saldo() - valor)
-                return f"Você sacou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
-
-            else:
-                return f"Valor do saque acima do seu saldo R${self.exibir_saldo():.2f}"
+        elif valor <= self.exibir_saldo():
+            self.alterar_saldo(self.exibir_saldo() - valor)
+            return f"Você sacou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
 
         else:
-            return "Insira o Cartão Para Sacar!"
+            return f"Valor do saque acima do seu saldo R${self.exibir_saldo():.2f}"
 
     def depositar(self, valor):
-        self.validar_senha()
 
-        if self.cartao_ativo():
-            if valor <= 0:
-                return "Valor Invalido!"
-
-            else:
-                self.alterar_saldo(self.exibir_saldo() + valor)
-                return f"Você depositou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
+        if valor <= 0:
+            return "Valor Invalido!"
 
         else:
-            return "Insira o Cartão Para Depositar!"
+            self.alterar_saldo(self.exibir_saldo() + valor)
+            return f"Você depositou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
 
     def transferir(self, conta, valor):
-        self.validar_senha()
 
-        if self.cartao_ativo():
-            if valor <= 0:
-                return "Valor Invalido!"
+        if valor <= 0:
+            return "Valor Invalido!"
 
-            if valor <= self.exibir_saldo():
-                self.alterar_saldo(self.exibir_saldo() - valor)
-                conta.alterar_saldo(conta.exibir_saldo() + valor)
+        if valor <= self.exibir_saldo():
+            self.alterar_saldo(self.exibir_saldo() - valor)
+            conta.alterar_saldo(conta.exibir_saldo() + valor)
 
-            else:
-                return f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
         else:
-            return "Insira o Cartão Para Transferir!"
-
+            return f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
 
 # endregion
 
@@ -220,6 +204,39 @@ def encontrar_titular(titular):
     return -1
 
 
+def logar_titular():
+    if not contas:
+        cor_alerta("[white]A lista de Contas está[/] Vazia!")
+        continuar()
+        return 0
+
+    while True:
+        titular = str(input('Titular da Conta ([0] para voltar): ')).title().strip()
+        
+        if titular == '0':
+            return 0
+        
+        elif not titular:
+            limpar_terminal()
+            continue
+        
+        senha = getpass(prompt='Digite sua Senha: ', mask='•')
+        
+        idx = encontrar_titular(titular)
+
+        if idx != -1 and contas[idx]["Senha"] == criptografar(senha):
+            cor_destaque(f"[cyan]Seja Bem Vindo![/] {titular}")
+            continuar()
+            break
+
+        else:
+            cor_alerta("[white]Titular ou Senha[/] Invalida!")
+            continuar()
+            continue
+    
+    return titular
+
+
 def encontrar_adm(admin):
     for i, item in enumerate(adm):
         if item["Admin"] == admin:
@@ -228,8 +245,17 @@ def encontrar_adm(admin):
 
 
 def verificar_adm():
+    if not adm:
+        cor_alerta("[white]A lista de Admins está[/] Vazia!")
+        continuar()
+        return
+    
     while True:
-        login = input("Admin: ").strip()
+        login = str(input("Admin ([0] para voltar): ")).strip().title()
+        
+        if login == '0':
+            limpar_terminal()
+            return 0
 
         if not login:
             limpar_terminal()
@@ -240,7 +266,7 @@ def verificar_adm():
         idx = encontrar_adm(login)
 
         if idx != -1 and adm[idx]["Senha"] == criptografar(senha):
-            cor_destaque(f"[cyan]Seja Bem Vindo![/] {login.upper()}")
+            cor_destaque(f"[cyan]Seja Bem Vindo![/] {login}")
             continuar()
             break
 
@@ -264,18 +290,37 @@ def menu_principal():
 
 
 def verificar_saldo():
-    pass
+    limpar_terminal()
+    logar = logar_titular()
+
+    if logar == 0:
+        return 0
+    
+    titular = Titular()
+    
+    for i, item in enumerate(contas):
+        if item["Titular"] == logar:
+            titular.alterar_id(item["ID"])
+            titular.alterar_usuario(item["Titular"])
+            titular.alterar_senha(item["Senha"])
+            titular.alterar_saldo(item["Saldo"])
+
+        console.print(Panel(Text.from_markup(f'[green]R$[/] [white]{titular.exibir_saldo():.2f}[/]', justify="center"), title="[green]Saldo[/] :dollar:", style="rgb(180,0,135)", width=30))
+        continuar()
 
 
 def sacar():
+    input('Em Breve...')
     pass
 
 
 def depositar():
+    input('Em Breve...')
     pass
 
 
 def transferir():
+    input('Em Breve...')
     pass
 
 
@@ -447,7 +492,8 @@ def lista_contas():
         continuar()
         return
 
-    console = Console()
+    limpar_terminal()
+
     tabela = Table(title="[white bold]Contas[/]", style="rgb(180,0,135)")
 
     tabela.add_column("[rgb(180,0,135)]ID[/]", justify="center")
@@ -458,7 +504,7 @@ def lista_contas():
         tabela.add_row(
             f"[cyan]{item['ID']}[/]",
             f"[white]{item['Titular']}[/]",
-            f"[green]R$[/] [white]{item['Saldo']}[/]",
+            f"[green]R$[/] [white]{item['Saldo']:.2f}[/]",
         )
 
     console.print(tabela)
@@ -481,15 +527,23 @@ while True:
 
         match opcao_mp:
             case 1:
-                pass
+                verificar = verificar_saldo()
+
+                if verificar == 0:
+                    continue
+
+                continue
 
             case 2:
+                input('Em Breve...')
                 pass
 
             case 3:
+                input('Em Breve...')
                 pass
 
             case 4:
+                input('Em Breve...')
                 pass
 
             case 9:
@@ -521,7 +575,7 @@ while True:
                             continue
 
                         case 0:
-                            continue
+                            break
 
                         case _:
                             cor_alerta(
@@ -529,7 +583,6 @@ while True:
                             )
                             continuar()
                             continue
-                    break
 
             case 0:
                 limpar_terminal()
