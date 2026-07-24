@@ -90,15 +90,15 @@ class Titular(ContaBancaria):
             self.alterar_saldo(self.exibir_saldo() - valor)
             return f"Você sacou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
 
-        else:
+        elif valor > self.exibir_saldo():
             return f"Valor do saque acima do seu saldo R${self.exibir_saldo():.2f}"
 
     def depositar(self, valor):
 
-        if valor <= 0:
-            return "Valor Invalido!"
+        if valor < 1:
+            return "Valor Invalido! (Deposito Apartir de R$1.00)"
 
-        else:
+        elif valor >= 1:
             self.alterar_saldo(self.exibir_saldo() + valor)
             return f"Você depositou R${valor:.2f}, seu novo saldo e de R${self.exibir_saldo():.2f}"
 
@@ -112,7 +112,10 @@ class Titular(ContaBancaria):
             conta.alterar_saldo(conta.exibir_saldo() + valor)
 
         else:
-            return f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
+            return (
+                f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
+            )
+
 
 # endregion
 
@@ -211,17 +214,17 @@ def logar_titular():
         return 0
 
     while True:
-        titular = str(input('Titular da Conta ([0] para voltar): ')).title().strip()
-        
-        if titular == '0':
+        titular = str(input("Titular da Conta ([0] para voltar): ")).title().strip()
+
+        if titular == "0":
             return 0
-        
+
         elif not titular:
             limpar_terminal()
             continue
-        
-        senha = getpass(prompt='Digite sua Senha: ', mask='•')
-        
+
+        senha = getpass(prompt="Digite sua Senha: ", mask="•")
+
         idx = encontrar_titular(titular)
 
         if idx != -1 and contas[idx]["Senha"] == criptografar(senha):
@@ -233,7 +236,7 @@ def logar_titular():
             cor_alerta("[white]Titular ou Senha[/] Invalida!")
             continuar()
             continue
-    
+
     return titular
 
 
@@ -249,11 +252,11 @@ def verificar_adm():
         cor_alerta("[white]A lista de Admins está[/] Vazia!")
         continuar()
         return
-    
+
     while True:
         login = str(input("Admin ([0] para voltar): ")).strip().title()
-        
-        if login == '0':
+
+        if login == "0":
             limpar_terminal()
             return 0
 
@@ -295,9 +298,9 @@ def verificar_saldo():
 
     if logar == 0:
         return 0
-    
+
     titular = Titular()
-    
+
     for i, item in enumerate(contas):
         if item["Titular"] == logar:
             titular.alterar_id(item["ID"])
@@ -305,22 +308,103 @@ def verificar_saldo():
             titular.alterar_senha(item["Senha"])
             titular.alterar_saldo(item["Saldo"])
 
-        console.print(Panel(Text.from_markup(f'[green]R$[/] [white]{titular.exibir_saldo():.2f}[/]', justify="center"), title="[green]Saldo[/] :dollar:", style="rgb(180,0,135)", width=30))
-        continuar()
+    console.print(
+        Panel(
+            Text.from_markup(
+                f"[green]R$[/] [white]{titular.exibir_saldo():.2f}[/]", justify="center"
+            ),
+            title="[green]Saldo[/] :dollar:",
+            style="rgb(180,0,135)",
+            width=30,
+        )
+    )
+    continuar()
 
 
 def sacar():
-    input('Em Breve...')
-    pass
+    limpar_terminal()
+    logar = logar_titular()
+
+    if logar == 0:
+        return 0
+
+    titular = Titular()
+
+    for i, item in enumerate(contas):
+        if item["Titular"] == logar:
+            titular.alterar_id(item["ID"])
+            titular.alterar_usuario(item["Titular"])
+            titular.alterar_senha(item["Senha"])
+            titular.alterar_saldo(item["Saldo"])
+
+    while True:
+        try:
+            valor = float(input("Qual Valor para Saque? ([0] para sair) "))
+            if valor == 0:
+                return
+
+            if not valor:
+                continue
+
+            print(titular.sacar(valor))
+
+            for i, item in enumerate(contas):
+                item["Saldo"] = titular.exibir_saldo()
+
+            continuar()
+            escrever_json()
+            break
+
+        except ValueError as erro:
+            limpar_terminal()
+            cor_alerta(f"[cyan]Digite Somente Números![/]\n[yellow]Erro:[/] {erro}")
+            continuar()
+            continue
 
 
 def depositar():
-    input('Em Breve...')
-    pass
+    limpar_terminal()
+    logar = logar_titular()
+
+    if logar == 0:
+        return 0
+
+    titular = Titular()
+
+    for i, item in enumerate(contas):
+        if item["Titular"] == logar:
+            titular.alterar_id(item["ID"])
+            titular.alterar_usuario(item["Titular"])
+            titular.alterar_senha(item["Senha"])
+            titular.alterar_saldo(item["Saldo"])
+
+    while True:
+        try:
+            valor = float(input("Qual Valor para Deposito? ([0] para sair) "))
+            if valor == 0:
+                return
+
+            if not valor:
+                continue
+
+            print(titular.depositar(valor))
+
+            for i, item in enumerate(contas):
+                item["Saldo"] = titular.exibir_saldo()
+
+            continuar()
+            escrever_json()
+            break
+
+        except ValueError as erro:
+            limpar_terminal()
+            cor_alerta(f"[cyan]Digite Somente Números![/]\n[yellow]Erro:[/] {erro}")
+            continuar()
+            continue
 
 
 def transferir():
-    input('Em Breve...')
+    input("Em Breve...")
     pass
 
 
@@ -535,15 +619,23 @@ while True:
                 continue
 
             case 2:
-                input('Em Breve...')
-                pass
+                saque = sacar()
+
+                if saque == 0:
+                    continue
+
+                continue
 
             case 3:
-                input('Em Breve...')
-                pass
+                deposito = depositar()
+
+                if deposito == 0:
+                    continue
+
+                continue
 
             case 4:
-                input('Em Breve...')
+                input("Em Breve...")
                 pass
 
             case 9:
