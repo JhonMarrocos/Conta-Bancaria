@@ -1,15 +1,16 @@
 # Bibliotecas
 
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich import print
-from stdiomask import getpass
-from hashlib import sha256
-from time import sleep
-import platform
 import json
 import os
+import platform
+from hashlib import sha256
+from time import sleep
+
+from rich import print
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from stdiomask import getpass
 
 # Variaveis
 
@@ -227,7 +228,6 @@ def cadastrados():
     console.print(tb)
     
     input("'Enter' para continuar...")
-    return
 
 
 # Main

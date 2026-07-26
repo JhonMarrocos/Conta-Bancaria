@@ -1,24 +1,24 @@
 # region Bibliotecas ↓
 
-from rich.text import Text
-from rich.table import Table
+import json
+import os
+import platform
+import sys
+from hashlib import sha256
+from time import sleep
+
+from rich import print
+from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
-from rich.console import Console
 from rich.prompt import Prompt
-from rich import print
-
+from rich.table import Table
+from rich.text import Text
 from stdiomask import getpass
-from hashlib import sha256
 
-from time import sleep
-import platform
-import os
-import sys
-import json
 # endregion
 
-# region Variaveis ↓
+# region Variáveis ↓
 
 adm = []
 contas = []
@@ -27,12 +27,12 @@ console = Console()
 if getattr(sys, "frozen", False):
     local_script = os.path.dirname(
         sys.executable
-    )  # Localiza o diretorio do programa se (execultavel)
+    )  # Localiza o diretório do programa se (executável)
 
 else:
     local_script = os.path.dirname(
         os.path.abspath(__file__)
-    )  # Localiza o diretorio do programa se (srcipt)
+    )  # Localiza o diretório do programa se (script)
 
 contas_json = os.path.join(local_script, "contas.json")
 
@@ -104,17 +104,23 @@ class Titular(ContaBancaria):
 
     def transferir(self, conta, valor):
 
-        if valor <= 0:
-            return "Valor Invalido!"
+        if valor < 1:
+            return "Valor Invalido! (Transferência Apartir de R$1.00)"
 
-        if valor <= self.exibir_saldo():
-            self.alterar_saldo(self.exibir_saldo() - valor)
-            conta.alterar_saldo(conta.exibir_saldo() + valor)
-
-        else:
+        elif valor > self.exibir_saldo():
             return (
-                f"Valor de transferencia acima do seu saldo R${self.exibir_saldo():.2f}"
+                f"Valor de transferência acima do seu saldo R${self.exibir_saldo():.2f}"
             )
+
+        self.alterar_saldo(self.exibir_saldo() - valor)
+        conta.alterar_saldo(conta.exibir_saldo() + valor)
+
+        return (
+            f"Transferência realizada com sucesso!\n"
+            f"Valor: R${valor:.2f}\n"
+            f"Destinatário: {conta.exibir_usuario()}\n"
+            f"Seu novo saldo: R${self.exibir_saldo():.2f}"
+        )
 
 
 # endregion
@@ -274,7 +280,7 @@ def verificar_adm():
             break
 
         else:
-            cor_alerta("[white]Usuario ou Senha[/] Invalida!")
+            cor_alerta("[white]Usuário ou Senha[/] Invalida!")
             continuar()
             return 0
 
@@ -349,7 +355,8 @@ def sacar():
             print(titular.sacar(valor))
 
             for i, item in enumerate(contas):
-                item["Saldo"] = titular.exibir_saldo()
+                if item["Titular"] == titular.exibir_usuario():
+                    item["Saldo"] = titular.exibir_saldo()
 
             continuar()
             escrever_json()
@@ -380,7 +387,7 @@ def depositar():
 
     while True:
         try:
-            valor = float(input("Qual Valor para Deposito? ([0] para sair) "))
+            valor = float(input("Qual Valor para Deposito? ([0] para sair): "))
             if valor == 0:
                 return
 
@@ -390,7 +397,8 @@ def depositar():
             print(titular.depositar(valor))
 
             for i, item in enumerate(contas):
-                item["Saldo"] = titular.exibir_saldo()
+                if item["Titular"] == titular.exibir_usuario():
+                    item["Saldo"] = titular.exibir_saldo()
 
             continuar()
             escrever_json()
@@ -404,8 +412,78 @@ def depositar():
 
 
 def transferir():
-    input("Em Breve...")
-    pass
+    limpar_terminal()
+    logar = logar_titular()
+
+    if logar == 0:
+        return 0
+
+    titular = Titular()
+
+    for i, item in enumerate(contas):
+        if item["Titular"] == logar:
+            titular.alterar_id(item["ID"])
+            titular.alterar_usuario(item["Titular"])
+            titular.alterar_senha(item["Senha"])
+            titular.alterar_saldo(item["Saldo"])
+
+    while True:
+        titular_destino = (
+            str(input("Para qual Titular deseja transferir? ([0] para sair): "))
+            .strip()
+            .title()
+        )
+
+        if titular_destino == "0":
+            return
+
+        if not titular_destino:
+            continue
+
+        encontrar = encontrar_titular(titular_destino)
+
+        if encontrar == -1:
+            cor_alerta(f"[white]O titular[/] [cyan]{titular_destino}[/] não existe!")
+            continuar()
+            continue
+        break
+
+    while True:
+        try:
+            valor = float(input("Qual Valor para Transferência?: "))
+
+            titular_2 = Titular()
+
+            for i, item in enumerate(contas):
+                if item["Titular"] == titular_destino:
+                    titular_2.alterar_id(item["ID"])
+                    titular_2.alterar_usuario(item["Titular"])
+                    titular_2.alterar_senha(item["Senha"])
+                    titular_2.alterar_saldo(item["Saldo"])
+
+            print(titular.transferir(titular_2, valor))
+
+            if valor < 1 or valor > titular.exibir_saldo():
+                continuar()
+                continue
+
+            for i, item in enumerate(contas):
+                if item["Titular"] == titular.exibir_usuario():
+                    item["Saldo"] = titular.exibir_saldo()
+
+            for i, item in enumerate(contas):
+                if item["Titular"] == titular_2.exibir_usuario():
+                    item["Saldo"] = titular_2.exibir_saldo()
+
+            continuar()
+            escrever_json()
+            break
+
+        except ValueError as erro:
+            limpar_terminal()
+            cor_alerta(f"[cyan]Digite Somente Números![/]\n[yellow]Erro:[/] {erro}")
+            continuar()
+            continue
 
 
 def menu_adm():
@@ -455,7 +533,7 @@ def cadastrar():
         try:
             senha = int(
                 getpass(
-                    prompt="Cadastre uma senha de 6 Digitos ([0] para sair!): ",
+                    prompt="Cadastre uma senha de 6 Dígitos ([0] para sair!): ",
                     mask="•",
                 )
             )
@@ -469,13 +547,13 @@ def cadastrar():
 
             elif len(str(senha)) != 6:
                 cor_alerta("[white]Forma de Senha[/] Invalida!")
-                print("A senha deve conter apenas 6 digitos!")
+                print("A senha deve conter apenas 6 dígitos!")
                 continuar()
                 continue
 
         except ValueError as erro:
             cor_alerta(
-                f"[white]Digite Apenas[/] [green]Numeros![/]\n[yellow]ERRO: {erro}"
+                f"[white]Digite Apenas[/] [green]Números![/]\n[yellow]ERRO: {erro}"
             )
             continuar()
             continue
@@ -498,7 +576,7 @@ def cadastrar():
     )
 
     escrever_json()
-    cor_destaque("[white]Conta Cadastrada Com[/] Suscesso!")
+    cor_destaque("[white]Conta Cadastrada Com[/] Sucesso!")
     continuar()
 
 
@@ -527,7 +605,10 @@ def remover():
                 cor_destaque(
                     "[white]Antes de Remover, e recomendado que o[/] [cyan]Titular[/] [white]saque seu[/] saldo!"
                 )
-                sleep(1)
+
+                for i, item in enumerate(contas):
+                    if item["ID"] == achar_id:
+                        cor_destaque(f'[white]Titular:[/] [cyan]{item["Titular"]}[/] [yellow]|[/] [white]Saldo:[/] {item["Saldo"]:.2f}')
 
                 escolha = (
                     str(
@@ -635,8 +716,12 @@ while True:
                 continue
 
             case 4:
-                input("Em Breve...")
-                pass
+                transfer = transferir()
+
+                if transfer == 0:
+                    continue
+
+                continue
 
             case 9:
                 limpar_terminal()
