@@ -608,7 +608,9 @@ def remover():
 
                 for i, item in enumerate(contas):
                     if item["ID"] == achar_id:
-                        cor_destaque(f'[white]Titular:[/] [cyan]{item["Titular"]}[/] [yellow]|[/] [white]Saldo:[/] {item["Saldo"]:.2f}')
+                        cor_destaque(
+                            f"[white]Titular:[/] [cyan]{item['Titular']}[/] [yellow]|[/] [white]Saldo:[/] {item['Saldo']:.2f}"
+                        )
 
                 escolha = (
                     str(
