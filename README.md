@@ -1,159 +1,99 @@
-# 🏦 Alpha Bank
+# Alpha Bank 🏦
 
-> Sistema Bancário desenvolvido em Python com foco em Programação Orientada a Objetos, persistência de dados em JSON e interface interativa no terminal.
+Um sistema bancário que roda no terminal, feito em Python. Dá pra criar contas, ver saldo, sacar, depositar e transferir entre titulares. Fiz pra praticar orientação a objetos e mexer com arquivos JSON, e aproveitei pra deixar o terminal mais bonito com a biblioteca `rich`.
 
-## 📖 Sobre o projeto
+## Como fica rodando
 
-O **Alpha Bank** é um sistema bancário desenvolvido para praticar conceitos fundamentais de desenvolvimento de software utilizando Python.
+**Tela inicial**
 
-O projeto simula operações bancárias através de um terminal interativo, permitindo o gerenciamento de contas, autenticação de administradores e armazenamento permanente dos dados.
+![Tela inicial](assets/00_inicio_loading_e_menu.gif)
 
-Além das funcionalidades do sistema, o objetivo principal foi aplicar boas práticas de programação, organização de código e Programação Orientada a Objetos.
+**Verificar saldo** (a senha fica mascarada com `•`)
 
----
+![Verificar saldo](assets/02_verificar_saldo.gif)
 
-## 🚀 Tecnologias utilizadas
+**Sacar** (testando erro de letra e valor acima do saldo)
 
-- Python 3
-- Rich (Interface no Terminal)
-- JSON
-- Hashlib (Criptografia SHA-256)
-- stdiomask
-- Programação Orientada a Objetos (POO)
+![Sacar](assets/03_sacar.gif)
 
----
+**Depositar**
 
-## 🧠 Conceitos aplicados
+![Depositar](assets/04_depositar.gif)
 
-- ✔️ Herança
-- ✔️ Encapsulamento
-- ✔️ Classes e Objetos
-- ✔️ Persistência de dados em JSON
-- ✔️ Hash de senhas com SHA-256
-- ✔️ Manipulação de arquivos
-- ✔️ Tratamento de exceções
-- ✔️ Menus interativos
-- ✔️ Organização do código em funções
+**Transferir** (testando destinatário que não existe)
 
----
+![Transferir](assets/05_transferir.gif)
 
-## ⚙️ Funcionalidades
+**Menu ADM** (cadastrar, listar e remover titular)
 
-### Área Administrativa
+![Menu ADM](assets/07_menu_adm.gif)
 
-- Cadastro de titulares
-- Remoção de contas
-- Listagem de contas cadastradas
-- Login de administrador
-- Senhas criptografadas
+## O que tem
 
-### Área do Cliente
+- Login por titular e senha de 6 dígitos
+- Saldo, saque, depósito e transferência
+- Menu de administrador pra cadastrar, listar e remover contas
+- Senhas guardadas como hash SHA-256 (nada de senha em texto puro)
+- Dados salvos em JSON, o `contas.json` é criado sozinho na primeira vez
+- Validação de entrada: letras no lugar de número, valor inválido, titular que não existe etc.
+- Animações no terminal (loading, alertas piscando)
 
-- Inserção e remoção de cartão
-- Controle de saldo
-- Estrutura preparada para:
-  - Saques
-  - Depósitos
-  - Transferências
+## Tecnologias
 
----
+- Python 3.10+ (uso `match/case`)
+- [rich](https://github.com/Textualize/rich) para as cores, painéis, tabelas e animações
+- [stdiomask](https://pypi.org/project/stdiomask/) para mascarar a senha
+- `json` e `hashlib` da biblioteca padrão
 
-## 🔐 Segurança
-
-O projeto utiliza criptografia SHA-256 para armazenar senhas, evitando que sejam salvas em texto puro.
-
-Exemplo:
-
-```
-Senha original:
-123456
-
-Armazenada como:
-8d969eef6ecad3c29a3a629280e686cff8ca...
-```
-
----
-
-## 💾 Armazenamento
-
-Os dados são persistidos em arquivos JSON.
-
-```
-admins.json
-contas.json
-```
-
-Assim, mesmo após fechar o programa, os cadastros permanecem salvos.
-
----
-
-## 📂 Estrutura do projeto
-
-```
-AlphaBank/
-│
-├── main.py
-├── contas.json
-├── admins.json
-└── README.md
-```
-
----
-
-## 📌 Melhorias futuras
-
-- Implementar saque
-- Implementar depósito
-- Implementar transferência
-- Consulta de saldo
-- Extrato bancário
-- Histórico de transações
-- Interface gráfica
-- Banco de dados SQL (PostgreSQL)
-
----
-
-## ▶️ Como executar
-
-Clone o repositório
+## Como rodar
 
 ```bash
-git clone https://github.com/seuusuario/AlphaBank.git
-```
-
-Acesse a pasta
-
-```bash
-cd AlphaBank
-```
-
-Instale as dependências
-
-```bash
+git clone <url-do-repositorio>
+cd <pasta-do-projeto>
 pip install rich stdiomask
+python conta_bancaria.py
 ```
 
-Execute
+### Criando o admin
 
-```bash
-python main.py
+O menu ADM (tecla `9` no menu principal) lê o arquivo `admins.json`, que não vem pronto. Crie ele na mesma pasta do programa assim:
+
+```json
+[
+    {
+        "Admin": "Admin",
+        "Senha": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+    }
+]
 ```
 
----
+Esse hash é a senha `123456`. Pra usar outra senha, gera o hash com:
 
-## 📷 Preview
+```python
+from hashlib import sha256
+print(sha256("minha_senha".encode()).hexdigest())
+```
 
-> Em breve serão adicionados GIFs e imagens demonstrando o funcionamento do sistema.
+## O que eu pratiquei
 
----
+- Classes, herança (`Titular` herda de `ContaBancaria`) e encapsulamento com atributos privados
+- Ler e escrever JSON
+- Separar o código em regiões e funções pequenas
+- Tratamento de erros com `try/except`
+- Fazer o programa funcionar tanto como script quanto como executável (`sys.frozen`)
 
-## 👨‍💻 Autor
+## O que quero melhorar
 
-**Jonathas Marrocos**
+Testei o projeto bastante e achei umas coisas que ainda preciso arrumar:
 
-Estudante de Análise e Desenvolvimento de Sistemas.
+- [ ] Impedir transferência para a própria conta (hoje isso gera saldo do nada)
+- [ ] Não deixar abrir o menu ADM quando o `admins.json` está vazio
+- [ ] Aceitar senhas que começam com zero (ex: `012345`)
+- [ ] Recusar valores como `inf` e `nan` em depósito e saque
+- [ ] Avisar quando tentar remover um ID que não existe
+- [ ] Usar `bcrypt` ou `argon2` em vez de SHA-256 puro, e limitar tentativas de login
+- [ ] Migrar de JSON para banco de dados (PostgreSQL)
 
-Desenvolvendo projetos para consolidar conhecimentos em Python, Programação Orientada a Objetos e Banco de Dados.
+## Sobre mim
 
-GitHub:
-https://github.com/JhonMarrocos
+Sou o Jhon, estudante de Análise e Desenvolvimento de Sistemas na Estácio, focado em Python e buscando meu primeiro estágio em tecnologia. Também tenho interesse em Segurança da Informação.

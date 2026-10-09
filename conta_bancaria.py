@@ -352,6 +352,13 @@ def sacar():
             if not valor:
                 continue
 
+            if valor < 1 or valor > titular.exibir_saldo():
+                print(
+                    f"Valor inválido ou acima do saldo (R${titular.exibir_saldo():.2f})"
+                )
+                continuar()
+                continue
+
             print(titular.sacar(valor))
 
             for i, item in enumerate(contas):
@@ -392,6 +399,11 @@ def depositar():
                 return
 
             if not valor:
+                continue
+
+            if valor < 1:
+                print("Valor Inválido! (Depósito a partir de R$1.00)")
+                continuar()
                 continue
 
             print(titular.depositar(valor))
@@ -461,11 +473,14 @@ def transferir():
                     titular_2.alterar_senha(item["Senha"])
                     titular_2.alterar_saldo(item["Saldo"])
 
-            print(titular.transferir(titular_2, valor))
-
             if valor < 1 or valor > titular.exibir_saldo():
+                print(
+                    f"Valor inválido ou acima do saldo (R${titular.exibir_saldo():.2f})"
+                )
                 continuar()
                 continue
+
+            print(titular.transferir(titular_2, valor))
 
             for i, item in enumerate(contas):
                 if item["Titular"] == titular.exibir_usuario():
@@ -642,6 +657,8 @@ def remover():
                         f"[white]Titular[/] {item['Titular']} [white]Removido com[/] [cyan]Sucesso![/]"
                     )
                     contas.pop(i)
+                    break
+
             escrever_json()
             continuar()
 
